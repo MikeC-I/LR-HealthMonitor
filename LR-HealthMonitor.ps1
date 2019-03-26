@@ -193,6 +193,7 @@ Function Get-ClusterWarnings($clusterstatus) {
         $statuswarnings = @()
         $nodeswarnings = @()
         $shardswarnings = @()
+        $warncluster = $false
         if ($_.Nodes -lt ($hosts.clusters | where clustername -eq $_.Cluster).numberofnodes) { $nodeswarnings += $_.Nodes }
         if ($_.Status -ne "green") { $statuswarnings += $_.Status }
         if ($_.ActivePercent -lt 100) { $shardswarnings += $_.ActivePercent }
@@ -203,7 +204,7 @@ Function Get-ClusterWarnings($clusterstatus) {
             if ($nodeswarnings.Count -gt 0) { $warncluster | Add-Member -MemberType NoteProperty -Name Nodes -Value $nodeswarnings }
             if ($shardswarnings.Count -gt 0) { $warncluster | Add-Member -MemberType NoteProperty -Name ActiveShards -Value $shardsswarnings }
         }
-        $clusterwarns += $warncluster
+        if ($warncluster -ne $false) { $clusterwarns += $warncluster }
     }
     $clusterwarns
 }
