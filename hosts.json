@@ -68,5 +68,12 @@
             "IsAIE": "Yes",
             "AIEData_Directory": "C:\\Program Files\\LogRhythm\\LogRhythm AI Engine\\data"
         }
+    ],
+    "clusters": [
+        {
+            "clustername":"logrepo",
+            "clusteraddress":"localhost",
+            "numberofnodes":1
+        }
     ]
 }
