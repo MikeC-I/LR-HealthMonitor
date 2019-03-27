@@ -69,8 +69,14 @@ Function Get-DirFileCount($hostname, $directory) {
 
 Function Get-ClusterInfo($hostname) {
     Try {
-        $dxstatus = Invoke-RestMethod "http://$($hostname):9200/_cluster/health?level=indices&pretty"
-        $dxstatus
+        Try {
+            $dxstatus = & 'C:\Program Files\PowerShell\6-preview\pwsh.exe -Command { Invoke-RestMethod "http://$($hostname):9200/_cluster/health?level=indices&pretty" -NoProxy }'
+            $dxstatus
+        }
+        Catch {        
+            $dxstatus = Invoke-RestMethod "http://$($hostname):9200/_cluster/health?level=indices&pretty"
+            $dxstatus
+        }
     }
     Catch {
         "Error retreiving cluster statistics"
