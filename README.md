@@ -1,6 +1,6 @@
 # LR-HealthMonitor
 
-Powershell script to monitor and report on health indicators for LogRhythm Windows servers (for now, Linux coming soon) including disk space, services status and log backlog
+Powershell script to monitor and report on health indicators for LogRhythm Windows servers (and DX clusters) including disk space, services status and log backlog
 
 ## Getting Started
 
