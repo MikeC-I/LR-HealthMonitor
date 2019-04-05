@@ -20,7 +20,7 @@ Options are:
 
   Gathers data from hosts defined in hosts.json and outputs results to stdout
   
--OutputWarnins
+-OutputWarnings
 
   Gathers data from hosts defined in hosts.json and outputs any warnings found (per thresholds defined in hosts.json) and outputs results to stdout
   
@@ -28,7 +28,7 @@ Options are:
 
   Gathers data from hosts defined in hosts.json and emails results to recipients defined in hosts.json
   
--EmailReport
+-EmailWarnings
 
   Gathers data from hosts defined in hosts.json and emails any warnings found (per thresholds defined in hosts.json) to recipients defined in hosts.json
   
