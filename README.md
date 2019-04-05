@@ -8,7 +8,7 @@ Copy LR-HealthMonitor.ps1 and hosts.json into C:\LogRhythm\Scripts\LR-HealthMoni
 
 ### Prerequisites
 
-Powershell and an account the RPC rights to the hosts to be monitored
+Powershell and an account the RPC rights to the hosts to be monitored (Powershell 6 required in environments with proxies)
 
 ### Installing
 
