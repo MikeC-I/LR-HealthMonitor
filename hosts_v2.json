@@ -1,0 +1,90 @@
+﻿{
+    "config": {
+           "smtpserver": "smtp.company.com",
+           "mailfrom": "me@company.com",
+           "recipients": [
+              "yout@company.com"
+           ],
+           "reportsubject": "[Company] LogRhythm - Windows Server Health Report",
+           "warningsubject": "WARNING - [Company] LogRhythm - Windows Server Warnings",
+           "drivewarning": 0.15,
+           "AIEWarning": 200,
+           "DXRPWarning": 100
+    },
+    "hosts": [        
+        {
+            "hostname": "lr-host",
+            "drives": [
+                "C:",
+                "D:",
+                "L:",
+                "T:"
+            ],
+            "services": [
+                "LogRhythm Admin API",
+                "LogRhythm AI Engine Cache Drilldown",
+                "LogRhythm API Gateway",
+                "LogRhythm Authentication API",
+                "LogRhythm Case API",
+                "LogRhythm Diagnostics Agent",
+                "LogRhythm Metrics Collection",
+                "LogRhythm Metrics Database",
+                "LogRhythm Metrics Web UI",
+                "LogRhythm Notification Service",
+                "LogRhythm Service Registry",
+                "LogRhythm SQL Service",
+                "LogRhythm Threat Intelligence API",
+                "LogRhythm Web Console API",
+                "LogRhythm Web Console UI",
+                "LogRhythm Web Indexer",
+                "LogRhythm Web Services Host API",
+                "LogRhythm Windows Authentication Service",
+                "LogRhythm AI Engine Communication Manager",
+                "LogRhythm AI Engine",
+                "LogRhythm DX - AllConf",
+                "LogRhythm DX - SQL Writer Service (Bulldozer)",
+                "LogRhythm DX - EM to DX Synchronization Service (Carpenter)",
+                "LogRhythm DX - Index Query Service (Columbo)",
+                "LogRhythm DX - Configuration Server",
+                "LogRhythm DX - Cluster Templating Service (consul-template)",
+                "LogRhythm DX - Elasticsearch Service",
+                "LogRhythm DX - Data Indexer Maintenance (GoMaintain)",
+                "LogRhythm DX - Grafana Service",
+                "LogRhythm DX - Service Monitoring (HeartThrob)",
+                "LogRhythm DX - InfluxDB Service",
+                "LogRhythm Job Manager",
+                "LogRhythm DX - CloudAI Data Splitter (Spawn)",
+                "LogRhythm Threat Intelligence Service",
+                "LogRhythm DX - HTTP/REST interface to DX (Transporter)",
+                "LogRhythm DX - Metrics Collection Service (Vitals)",
+                "LogRhythm DX - CloudAI Data Receiver (WatchTower)",
+                "LogRhythm Alarming and Response Manager",
+                "LogRhythm Mediator Server Service",
+                "LogRhythm System Monitor Service"
+                ],
+            "IsDP": "Yes",
+            "DXRP_Directory": "C:\\Program Files\\LogRhythm\\LogRhythm Mediator Server\\state\\DXReliablePersist",
+            "IsAIE": "Yes",
+            "AIEData_Directory": "C:\\Program Files\\LogRhythm\\LogRhythm AI Engine\\data"
+        }
+    ],
+    "clusters": [
+        {
+            "clustername":"logrepo",
+            "clusteraddress":"localhost",
+            "numberofnodes":1,
+            "retention_target":30
+        },
+        {
+            "clustername":"logrepo2",
+            "clusteraddress":"localhost",
+            "numberofnodes":1,
+            "retention_target":30
+        }
+    ],
+    "database": {
+        "server":"lr-host",
+        "user":"sa",
+        "password":"sapassword"
+    }
+}
