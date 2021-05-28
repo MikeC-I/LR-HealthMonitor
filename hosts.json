@@ -1,10 +1,11 @@
 ﻿{
     "config": {
+	   "logfile":"C:\\LogRhythm\\Scripts\\LR-HealthMonitor\\LR-HealthMonitor.log",
+           "loglevel":2, 
            "smtpserver": "smtp.company.com",
-           "mailfrom": "logrhythm@copmany.com",
+           "mailfrom": "me@company.com",
            "recipients": [
-              "you@othercompany.ca",
-              "youtoo@othercompany.ca"
+              "yout@company.com"
            ],
            "reportsubject": "[Company] LogRhythm - Windows Server Health Report",
            "warningsubject": "WARNING - [Company] LogRhythm - Windows Server Warnings",
@@ -14,12 +15,11 @@
     },
     "hosts": [        
         {
-            "hostname": "hostname.company.com",
+            "hostname": "lr-host",
             "drives": [
                 "C:",
                 "D:",
                 "L:",
-		"S:",
                 "T:"
             ],
             "services": [
@@ -28,6 +28,7 @@
                 "LogRhythm API Gateway",
                 "LogRhythm Authentication API",
                 "LogRhythm Case API",
+                "LogRhythm Diagnostics Agent",
                 "LogRhythm Metrics Collection",
                 "LogRhythm Metrics Database",
                 "LogRhythm Metrics Web UI",
@@ -73,7 +74,19 @@
         {
             "clustername":"logrepo",
             "clusteraddress":"localhost",
-            "numberofnodes":1
+            "numberofnodes":1,
+            "retention_target":30
+        },
+        {
+            "clustername":"logrepo2",
+            "clusteraddress":"localhost",
+            "numberofnodes":1,
+            "retention_target":30
         }
-    ]
+    ],
+    "database": {
+        "server":"lr-host",
+        "user":"sa",
+        "password":"sapassword"
+    }
 }
