@@ -31,15 +31,17 @@
 .NOTES
     Change Log:
         2021/05/27 - Major update (including adding this change log) - added robust logging capabilities to enable alerting in LogRhythm
+        2021/06/07 - Added Spooled Events folder file count check
  #>
 
 [CmdletBinding()]
 param([switch]$EmailWarnings, [switch]$EmailReport, [switch]$OutputReport, [switch]$OutputWarnings, [switch]$NoSQL)
 
-$file = "C:\LogRhythm\Scripts\LR-HealthMonitor\hosts_v2.json"
+$file = "C:\LogRhythm\Scripts\LR-HealthMonitor\hosts.json"
 $hosts = Get-Content -Raw $file | ConvertFrom-Json
 $drivewarning = $hosts.config.drivewarning # Percentage of drive free under which a warning is issued
 $dxrpwarning = $hosts.config.DXRPWarning # Number of files in DXReliablePersist folder above which a warning is issued
+$spooledeventswarning = $hosts.config.SpooledEventsWarning
 $aiedatawarning = $hosts.config.AIEWarning # Number of files in AIE Data folder above which a warning is issued
 $smtpserver = $hosts.config.smtpserver
 $mailfrom = $hosts.config.mailfrom
@@ -128,9 +130,9 @@ Function Get-ServerServices([String]$hostname) {
 }
 
 Function Get-DirFileCount($hostname, $directory) {
+    $directory = $directory -replace "\\","\\"
     write-log -loglevel 1 -logdetail "[INFO] Retrieving file count for directory $($directory) on host $($hostname)"
-    Try {
-        $directory = $directory -replace "\\","\\"
+    Try {        
         $filecount = Get-WmiObject CIM_DataFile -ComputerName $hostname -filter "Drive='$($directory.SubString(0,2))' AND path='$($directory.SubString(2))'"
         $filecount.Count
         Write-Log -loglevel 1 -logdetail "[INFO] Succesfully retrieved file count for directory $($directory) on host $($hostname)"
@@ -183,7 +185,9 @@ Function Get-HostsData($hostjson) {
         }
         if ($_.IsDP -eq "Yes") {
             $DXRPCount = Get-DirFileCount $_.hostname $_.DXRP_Directory
+            $SpooledEventsCount = Get-DirFileCount $_.hostname $_.SpooledEventstDirectory
             $thishost | Add-Member -MemberType NoteProperty -Name DXRPCount -Value $DXRPCount
+            $thishost | Add-Member -MemberType NoteProperty -Name SpooledEventsCount -Value $SpooledEventsCount
         }
         if ($_.IsAIE -eq "Yes") {
             $AIEDataCount = Get-DirFileCount $_.hostname $_.AIEData_Directory
@@ -210,9 +214,6 @@ Function Get-ClustersStatus($hostjson) {
         $thisCluster | Add-Member -MemberType NoteProperty -Name Status -Value $cluster.status
         $thisCluster | Add-Member -MemberType NoteProperty -Name ActivePercent -Value $cluster.active_shards_percent_as_number
         $thisCluster | Add-Member -MemberType NoteProperty -Name ActiveIndices -Value $clusterindices.Lines
-        <# DEBUG CODE #>
-        # Write-Host "Cluster $($_.clustername) Active Indices: $($thisCluster.ActiveIndi"
-
         $clusterstatus += $thisCluster
     }
     Write-Log -loglevel 1 -logdetail "[INFO] Consolidation complete"
@@ -409,6 +410,11 @@ Function Write-Hosts($hoststatus,$clusterstatus,$dbstatus,$eventstatus) {
             Write-Output " "
             Write-Log -loglevel 2 -logdetail "DX Reliable Persist File Count for host $($_.Hostname) - $($_.DXRPCount)"
         }
+        if ($_.PSobject.Properties.Name -contains "SpooledEventsCount") {
+            Write-Output "Spooled Events File Count:  ",$_.SpooledEventsCount
+            Write-Output " "
+            Write-Log -loglevel 2 -logdetail "Spooled Events File Count for host $($_.Hostname) - $($_.SpooledEventsCount)"
+        }
         if ($_.PSobject.Properties.Name -contains "AIEDataCount") {
             Write-Output "AIE Data File Count:  ",$_.AIEDataCount
             Write-Output " "
@@ -449,6 +455,9 @@ Function Get-Warnings($hoststatus) {
         if ($_.AIEDataCount -gt $aiedatawarning) {
             $aiewarnings += $_.AIEDataCount
         }
+        if ($_.SpooledEventsCount -gt $spooledeventswarning) {
+            $spooledeventswarnings += $_.SpooledEventsCount
+        }
         if (($lowdrives.Count -gt 0) -or ($servicewarnings.Count -gt 0) -or ($dxrpwarnings.Count -gt 0) -or ($aiewarnings.Count -gt 0)) {
             $warnhost = New-Object -TypeName psobject
             $warnhost | Add-Member -MemberType NoteProperty -Name Hostname -Value $_.hostname
@@ -456,6 +465,7 @@ Function Get-Warnings($hoststatus) {
             if ($servicewarnings.Count -gt 0) { $warnhost | Add-Member -MemberType NoteProperty -Name Services -Value $servicewarnings }
             if ($dxrpwarnings.Count -gt 0) { $warnhost | Add-Member -MemberType NoteProperty -Name DXReliablePersist -Value $dxrpwarnings }
             if ($aiewarnings.Count -gt 0) { $warnhost | Add-Member -MemberType NoteProperty -Name AIEData -Value $aiewarnings }
+            if ($spooledeventswarnings.Count -gt 0) { $warnhost | Add-Member -MemberType NoteProperty -Name SpooledEvents -Value $spooledeventswarnings }
             $hostwarnings += $warnhost
         }
     }
@@ -520,15 +530,18 @@ Function Write-Warnings($hostwarnings, $clusterwarnings, $dbwarns, $ev) {
                 Write-Output $_.DXReliablePersist
                 Write-Output " "
                 Write-Log -loglevel 3 -logdetail "***WARNING*** File count in DX Reliable Persist folder is above the threshold - Host: $($_.Hostname)  DXRP File Count: $($_.DXReliablePersist)"
-
             }
             if ($_.AIEData.Count -gt 0) { 
                 Write-Output "File count in the AIE data folder is above the threshold:"
                 Write-Output $_.AIEData
                 Write-Output " "
-                ForEach ($a in $_.AIEData) {
-                    Write-Log -loglevel 3 -logdetail "***WARNING*** File count in AIE Data folder is above the threshold - Host: $($_.Hostname)  Data Folder File Count: $($a)"
-                }
+                Write-Log -loglevel 3 -logdetail "***WARNING*** File count in AIE Data folder is above the threshold - Host: $($_.Hostname)  Data Folder File Count: $($_.AIEData)"            
+            }
+            if ($_.SpooledEvents.Count -gt 0) { 
+                Write-Output "File count in the Spooled Events folder is above the threshold:"
+                Write-Output $_.SpooledEvents
+                Write-Output " "
+                Write-Log -loglevel 3 -logdetail "***WARNING*** File count in Spooled Events folder is above the threshold - Host: $($_.Hostname)  Data Folder File Count: $($_.SpooledEvents)"
             }
         }
     }
