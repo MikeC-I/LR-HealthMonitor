@@ -32,6 +32,7 @@
     Change Log:
         2021/05/27 - Major update (including adding this change log) - added robust logging capabilities to enable alerting in LogRhythm
         2021/06/07 - Added Spooled Events folder file count check
+        2021/06/21 - Fixed bug in log rotation, added date/time header for report and warnings
  #>
 
 [CmdletBinding()]
@@ -395,6 +396,7 @@ Function Write-DBReport ($dbhistory, $dbpartition) {
 
 Function Write-Hosts($hoststatus,$clusterstatus,$dbstatus,$eventstatus) {
     Write-Log -loglevel 1 -logdetail "[INFO] Outputing host status"
+    Write-Output "Health check for $(Get-Date)"
     $hoststatus | ForEach-Object {
         Write-Output "Hostname:",$_.Hostname
         Write-Output $_.Drives | Format-Table -AutoSize
@@ -502,6 +504,7 @@ Function Get-ClusterWarnings($clusterstatus) {
 Function Write-Warnings($hostwarnings, $clusterwarnings, $dbwarns, $ev) {
     Write-Log -loglevel 1 -logdetail "[INFO] Outputing host warnings"
     if (($hostwarnings.Count -eq 0) -and ($clusterwarnings.Count -eq 0) -and ($dbwarns | Get-Member -MemberType NoteProperty ).Count -eq 0)  { break }
+    Write-Output "Health check for $(Get-Date)"
     if ($hostwarnings.Count -ne 0) {
         Write-Output "Warnings are present for the following hosts:" 
         Write-Output " "
