@@ -77,8 +77,8 @@ Function Write-Log {
             $logfile_exists = Test-Path -Path $logfile
             if ($logfile_exists -eq 1) {
                 if ((Get-Item $logfile).length/1MB -ge 10) {
-                    $logfilename = ((Get-Item $logdetail).Name).ToString()
-                    $newfilename = "$($logfilename)"+ (Get-Date -Format "yyyyMMddhhmmss").ToString()
+                    $logfilename = [io.path]::GetFileNameWithoutExtension($logfile)
+                    $newfilename = "$($logfilename)"+ (Get-Date -Format "yyyyMMddhhmmss").ToString() + ".log"
                     Rename-Item -Path $logfile -NewName $newfilename
                     New-Item $logfile -ItemType File
                     $this_Date = Get-Date -Format "MM\/dd\/yyyy hh:mm:ss tt"
