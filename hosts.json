@@ -11,7 +11,8 @@
            "warningsubject": "WARNING - [Company] LogRhythm - Windows Server Warnings",
            "drivewarning": 0.15,
            "AIEWarning": 200,
-           "DXRPWarning": 100
+           "DXRPWarning": 100,
+	   "SpooledEventsWarning": 10,
     },
     "hosts": [        
         {
