@@ -12,7 +12,7 @@
            "drivewarning": 0.15,
            "AIEWarning": 200,
            "DXRPWarning": 100,
-	   "SpooledEventsWarning": 10,
+	   "SpooledEventsWarning": 10
     },
     "hosts": [        
         {
