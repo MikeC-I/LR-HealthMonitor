@@ -441,6 +441,7 @@ Function Get-Warnings($hoststatus) {
         $servicewarnings = @()
         $dxrpwarnings = @()
         $aiewarnings = @()
+        $spooledeventswarnings = @()
         $_.Drives | ForEach-Object {
             if ($_.DrivePercentFree -lt $drivewarning) {
                 $lowdrives += $_
