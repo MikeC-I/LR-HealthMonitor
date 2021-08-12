@@ -66,10 +66,10 @@
                 "LogRhythm System Monitor Service"
                 ],
             "IsDP": "Yes",
-            "DXRP_Directory": "C:\\Program Files\\LogRhythm\\LogRhythm Mediator Server\\state\\DXReliablePersist",
-	    "SpooledEventstDirectory": "C:\\Program Files\\LogRhythm\\LogRhythm Mediator Server\\state\\SpooledEvents",
+            "DXRP_Directory": "C:\\Program Files\\LogRhythm\\LogRhythm Mediator Server\\state\\DXReliablePersist\\",
+	    "SpooledEventstDirectory": "C:\\Program Files\\LogRhythm\\LogRhythm Mediator Server\\state\\SpooledEvents\\",
             "IsAIE": "Yes",
-            "AIEData_Directory": "C:\\Program Files\\LogRhythm\\LogRhythm AI Engine\\data"
+            "AIEData_Directory": "C:\\Program Files\\LogRhythm\\LogRhythm AI Engine\\data\\"
         }
     ],
     "clusters": [
