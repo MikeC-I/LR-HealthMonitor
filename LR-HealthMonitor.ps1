@@ -33,6 +33,7 @@
         2021/05/27 - Major update (including adding this change log) - added robust logging capabilities to enable alerting in LogRhythm
         2021/06/07 - Added Spooled Events folder file count check
         2021/06/21 - Fixed bug in log rotation, added date/time header for report and warnings
+        2022/03/16 - Added Unidentified Log Count metrics and warnings
  #>
 
 [CmdletBinding()]
@@ -54,6 +55,7 @@ $sqluser = $hosts.database.user
 $sqlpassword = $hosts.database.password
 $globalloglevel = $hosts.config.loglevel
 $logfile = $hosts.config.logfile
+$Unidentifiedthreshold = $hosts.config.UnidentifiedWarning
 #$sqlcredential = New-Object System.Management.Automation.PsCredential($sqluser, $sqlpassword)
 
 Function Write-Log {  
@@ -157,7 +159,6 @@ Function Get-ClusterInfo($hostname) {
         "Error retreiving cluster statistics"
     }
 }
-    
 
 Function Get-HostsData($hostjson) {
     Write-Log -loglevel 1 -logdetail "[INFO] Consolidating host data..."
@@ -317,6 +318,24 @@ Function Get-DBJobHistory {
     Return $history_results, $events_partitions
 }
 
+Function Get-DBLogCounts {
+     $enddate = "$((Get-Date).AddDays(0).ToString('yyyy-MM-dd')) 00:00:00"
+     $startdate = "$((Get-Date).AddDays(-1).ToString('yyyy-MM-dd')) 00:00:00"
+     $query = "SELECT '$startdate' AS 'Start Date', '$enddate' AS 'End Date', SUM(CAST(LogRhythm_LogMart.dbo.StatsMediatorCountsHour.CountLogs as BIGINT)) AS 'Total Logs', SUM(CAST(dbo.StatsMediatorCountsHour.CountIdentifiedLogs as BIGINT)) AS 'Identified Logs', (SUM(CAST(dbo.StatsMediatorCountsHour.CountLogs as BIGINT)) - SUM(CAST(dbo.StatsMediatorCountsHour.CountIdentifiedLogs as BIGINT))) AS 'Unidentified Logs', SUM(CAST(dbo.StatsMediatorCountsHour.CountEvents as BIGINT)) AS 'Events' FROM dbo.StatsMediatorCountsHour WHERE dbo.StatsMediatorCountsHour.StatDate >= '$startdate' AND dbo.StatsMediatorCountsHour.StatDate < '$enddate';"
+     $c_String = "Data Source=$sqlserver;Initial Catalog=LogRhythm_LogMart;User ID=$sqluser;Password=$sqlpassword;ApplicationIntent=ReadOnly"
+     Write-Log -loglevel 1 -logdetail "[INFO] Querying SQL for log count stats from $($startdate) to $($enddate)"
+     Try {
+        $LogStats = Invoke-Sqlcmd -ConnectionString $c_String -Query $query -ErrorAction Stop
+        Write-log -loglevel 1 -logdetail "[INFO] Queried for log stats succesfully."
+        $returnstats = $LogStats
+    }
+    Catch {
+        Write-Log -loglevel 3 -logdetail "***ERROR*** An error occured querying SQL for log stats: $_"
+        $returnstats = "Could not query log stats"
+    }
+    Return $returnstats
+}
+
 Function Get-DBJobWarnings($historyresults) {
     Write-Log -loglevel 1 -logdetail "[INFO] Consolidating warnings"
     $time_tolerance = New-TimeSpan -days 2
@@ -344,37 +363,7 @@ Function Get-DBJobWarnings($historyresults) {
     Return $dbwarns          
 }
 
-Function Write-DBWarnings ($dbhistory, $dbwarns) {    
-    Write-Log -loglevel 1 -logdetail "[INFO] Outputing warnings"
-    Write-Output "Warnings are present for database health"
-    Write-Output " "
-    if ($dbwarns.MainLastRunWarning -eq $true) {
-        Write-Output "Maintenance Jobs have not run in the last 24 hours."
-        Write-Output " "
-        $dbhistory | Format-Table -Property JobName, LastRunDate
-        $dbhistory | ForEach-Object {
-            Write-Log -loglevel 3 -logdetail "***WARNING*** A maintenance job has not run in the last 24 hours. Job name: $($_.JobName)  Last Run: $($_.LastRunDate)"
-        }
-    }
-    if ($dbwarns.BackupLastRunWarning -eq $true) {
-        Write-Output "Backup Jobs have not run in the last 24 hours."
-        Write-Output " "
-        $dbhistory | Select-Object -Last 1 | Format-Table -Property JobName, LastRunDate
-        $dbhistory | Select-Object -Last 1 | ForEach-Object {
-            Write-Log -loglevel 3 -logdetail "***WARNING*** A backup job has not run in the last 24 hours. Job name: $($_.JobName)  Last Run: $($_.LastRunDate)" 
-        }   
-    }
-    if ($dbwarns.EnabledWarning -ne $null) {
-        Write-Output "One or more maintenance job is not enabled"
-        Write-Output " "
-        $dbhistory | Format-Table -Property JobName, Enabled
-        $dbhistory | ForEach-Object {
-            Write-Log -loglevel 3 -logdetail "***WARNING*** A maintenance job is not enabled. Job name: $($_.JobName)  Enabled Status: $($_.Enabled)"
-        }
-    }
-}
-
-Function Write-DBReport ($dbhistory, $dbpartition) {
+Function Write-DBReport ($dbhistory, $dbpartition, $ls) {
     Write-Log -loglevel 1 -logdetail "[INFO] Outputing DB report"
     Write-Output "Database Maintenance Job Status:"
     Write-Output $dbhistory | Format-Table
@@ -391,10 +380,14 @@ Function Write-DBReport ($dbhistory, $dbpartition) {
             Write-Log -loglevel 2 -logdetail "EventsDB Partition Statistics - Max Partition Size: $($($dbpartition | Measure-Object -Maximum PartitionRow).Maximum)  Average Partition Size: $($($dbpartition | Measure-Object -Average PartitionRow).Average)  Current Partition Size: $($row.PartitionRow)"
         }
     }
+    Write-Output " "
+    Write-Output "Log Statistics:"
+    Write-Output $ls
+    Write-Log -loglevel 2 -logdetail "Log Statistics - Total Logs: $($ls.('Total Logs')); Unidentified Logs: $($ls.('Unidentified Logs')); Events: $($ls.('Events'))"
     Write-Log -loglevel 1 -logdetail "[INFO] Output complete"
 }
 
-Function Write-Hosts($hoststatus,$clusterstatus,$dbstatus,$eventstatus) {
+Function Write-Hosts($hoststatus,$clusterstatus,$dbstatus,$eventstatus,$ls) {
     Write-Log -loglevel 1 -logdetail "[INFO] Outputing host status"
     Write-Output "Health check for $(Get-Date)"
     $hoststatus | ForEach-Object {
@@ -429,7 +422,7 @@ Function Write-Hosts($hoststatus,$clusterstatus,$dbstatus,$eventstatus) {
         Write-Log -loglevel 2 -logdetail "Cluster status for $($c.Cluster) - Nodes: $($c.Nodes)  Status: $($c.Status)  Active Percent: $($c.ActivePercent)  Active Indices: $($c.ActiveIdices)"
     }
     if ($NoSQL.IsPresent -eq $false) {
-        Write-DBReport $dbstatus $eventstatus
+        Write-DBReport $dbstatus $eventstatus $ls
     }   
     Write-Log -loglevel 1 -logdetail "[INFO] Output complete"     
 }
@@ -502,9 +495,59 @@ Function Get-ClusterWarnings($clusterstatus) {
     $clusterwarns
 }
 
-Function Write-Warnings($hostwarnings, $clusterwarnings, $dbwarns, $ev) {
+Function Get-DBLogCountsWarnings($logstatsresults) {
+    if ($logstatsresults -eq "Could not query log stats") {
+        Write-Log -loglevel 3 -logdetail "***WARNING*** $($logstatsresults)"
+        return $logstatsresults
+    }
+    else {
+        if ($logstatsresults.("Unidentified Logs") -gt $Unidentifiedthreshold) {
+            $returnwarning = "Unidentified Log Count: $($logstatsresults.('Unidentified Logs')); Warning Threshold: $($Unidentifiedthreshold)"
+            Write-Log -loglevel 3 -logdetail "***WARNING*** Unidentified Log Count Warnings: $($returnwarning)"
+            Return $returnwarning
+        }
+        else {
+            Return $null
+        }
+    }
+}
+
+Function Write-DBWarnings ($dbhistory, $dbwarns) {    
+    Write-Log -loglevel 1 -logdetail "[INFO] Outputing warnings"
+    Write-Output "Warnings are present for database health"
+    Write-Output " "
+    if ($dbwarns.MainLastRunWarning -eq $true) {
+        Write-Output "Maintenance Jobs have not run in the last 24 hours."
+        Write-Output " "
+        $dbhistory | Format-Table -Property JobName, LastRunDate
+        $dbhistory | ForEach-Object {
+            Write-Log -loglevel 3 -logdetail "***WARNING*** A maintenance job has not run in the last 24 hours. Job name: $($_.JobName)  Last Run: $($_.LastRunDate)"
+        }
+    }
+    if ($dbwarns.BackupLastRunWarning -eq $true) {
+        Write-Output "Backup Jobs have not run in the last 24 hours."
+        Write-Output " "
+        $dbhistory | Select-Object -Last 1 | Format-Table -Property JobName, LastRunDate
+        $dbhistory | Select-Object -Last 1 | ForEach-Object {
+            Write-Log -loglevel 3 -logdetail "***WARNING*** A backup job has not run in the last 24 hours. Job name: $($_.JobName)  Last Run: $($_.LastRunDate)" 
+        }   
+    }
+    if ($dbwarns.EnabledWarning -ne $null) {
+        Write-Output "One or more maintenance job is not enabled"
+        Write-Output " "
+        $dbhistory | Format-Table -Property JobName, Enabled
+        $dbhistory | ForEach-Object {
+            Write-Log -loglevel 3 -logdetail "***WARNING*** A maintenance job is not enabled. Job name: $($_.JobName)  Enabled Status: $($_.Enabled)"
+        }
+    }
+}
+
+Function Write-Warnings($hostwarnings, $clusterwarnings, $dbwarns, $ev, $lswarn) {
     Write-Log -loglevel 1 -logdetail "[INFO] Outputing host warnings"
-    if (($hostwarnings.Count -eq 0) -and ($clusterwarnings.Count -eq 0) -and ($dbwarns | Get-Member -MemberType NoteProperty ).Count -eq 0)  { break }
+    if (($hostwarnings.Count -eq 0) -and ($clusterwarnings.Count -eq 0) -and (($dbwarns | Get-Member -MemberType NoteProperty ).Count -eq 0) -and ($lswarn -eq $null) )  { 
+        Write-Log -loglevel 1 -logdetail "[INFO] No warnings present"
+        break
+    }
     Write-Output "Health check for $(Get-Date)"
     if ($hostwarnings.Count -ne 0) {
         Write-Output "Warnings are present for the following hosts:" 
@@ -586,11 +629,15 @@ Function Write-Warnings($hostwarnings, $clusterwarnings, $dbwarns, $ev) {
     if (($NoSQL.IsPresent -eq $false) -and ($dbwarns | Get-Member -MemberType NoteProperty).Count -gt 0)  {
         Write-DBWarnings $ev $dbwarns
     }
+    if (($lswarn -ne $null) -and ($NoSQL.IsPresent -eq $false)) {
+        Write-Output "Unidentified Log Count Warnings Are Present:"
+        Write-Output $lswarn
+    }
 }    
 
-Function Email-Warnings($hostwarnings,$clusterwarnings,$db,$ev) {
+Function Email-Warnings($hostwarnings,$clusterwarnings,$db,$ev,$lswarn) {
     Write-Log -loglevel 2 -logdetail "Emailing warnings to $($mailrecipients)"
-    $msgbody = Write-Warnings $hostwarnings $clusterwarnings $db $ev | Out-String
+    $msgbody = Write-Warnings $hostwarnings $clusterwarnings $db $ev $lswarn | Out-String
     Try {
         Send-MailMessage -SmtpServer $smtpserver -From $mailfrom -To $mailrecipients -Subject $warningsubject -Body $msgbody
     }
@@ -599,9 +646,9 @@ Function Email-Warnings($hostwarnings,$clusterwarnings,$db,$ev) {
     }
 }
 
-Function Email-Report($hoststatus,$clusterstatus,$db,$ev) {
+Function Email-Report($hoststatus,$clusterstatus,$db,$ev,$ls) {
     Write-Log -loglevel 2 -logdetail "Emailing report to $($mailrecipients)"
-    $msgbody = Write-Hosts $hoststatus $clusterstatus $db $ev | Out-String
+    $msgbody = Write-Hosts $hoststatus $clusterstatus $db $ev $ls | Out-String
     Try {
         Send-MailMessage -SmtpServer $smtpserver -From $mailfrom -To $mailrecipients -Subject $reportsubject -Body $msgbody
     }
@@ -614,6 +661,8 @@ if ($NoSQL.IsPresent -eq $false) {
     Write-Log -loglevel 2 -logdetail "Initiating health check with SQL check enabled"
     $dbresults, $events = Get-DBJobHistory
     $dbwarnings = Get-DBJobWarnings $dbresults
+    $logstats = Get-DBLogCounts
+    $logstatswarning = Get-DBLogCountsWarnings $logstats
 }
 else {
     Write-Log -loglevel 2 -logdetail "Initiating health check without SQL check enabled"
@@ -624,7 +673,9 @@ $allclusterstatus = Get-ClustersStatus $hosts
 $warns = Get-Warnings $allhoststatus
 $clusterwarnings = Get-ClusterWarnings $allclusterstatus
 
-if ($EmailWarnings.IsPresent) { Email-Warnings $warns $clusterwarnings $dbwarnings $dbresults }
-if ($EmailReport.IsPresent) { Email-Report $allhoststatus $allclusterstatus $dbresults $events }
-if ($OutputReport.IsPresent) { Write-Hosts $allhoststatus $allclusterstatus $dbresults $events }
-if ($OutputWarnings.IsPresent) { Write-Warnings $warns $clusterwarnings $dbwarnings $dbresults }
+
+if ($EmailReport.IsPresent) { Email-Report $allhoststatus $allclusterstatus $dbresults $events $logstats }
+if ($EmailWarnings.IsPresent) { Email-Warnings $warns $clusterwarnings $dbwarnings $dbresults $logstatswarning }
+
+if ($OutputReport.IsPresent) { Write-Hosts $allhoststatus $allclusterstatus $dbresults $events $logstats }
+if ($OutputWarnings.IsPresent) { Write-Warnings $warns $clusterwarnings $dbwarnings $dbresults $logstatswarning }
