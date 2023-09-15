@@ -47,7 +47,7 @@ For scheduled task, action should be 'Start a program'
     
     -Noninteractive -ExecutionPolicy Bypass -Command "C:\LogRhythm\Scripts\LR-HealthMonitor\LR-HealthMonitor.ps1 -EmailWarnings"
 
-# Other Magic
+## Other Magic
 
 If you have issues retrieving services from remote computers, even though all other WMI permissions are correct, try this: https://stackoverflow.com/questions/3917477/granting-remote-user-non-admin-the-ability-to-enumerate-services-in-win32-serv
     
