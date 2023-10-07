@@ -1,0 +1,82 @@
+<?xml version="1.0" standalone="yes"?>
+<RuleDataset>
+  <ExportInfo>
+    <ExportConsoleVersion>7.9.0.0</ExportConsoleVersion>
+    <KBVersion>7.1.675.0</KBVersion>
+    <DateExported>2023-10-07T20:47:02.6319052+00:00</DateExported>
+    <ExportLicense>947939</ExportLicense>
+    <ExportUser>IDLDAP\mcontast</ExportUser>
+  </ExportInfo>
+  <MPERule>
+    <MPERuleID>1000001739</MPERuleID>
+    <MPERuleRegexID>1000000158</MPERuleRegexID>
+    <RuleStatus>2</RuleStatus>
+    <StatusName>Test</StatusName>
+    <CommonEventID>1026822</CommonEventID>
+    <CommonEventName>System Statistics</CommonEventName>
+    <MsgClassID>3400</MsgClassID>
+    <Name>Disk Statistics</Name>
+    <FullName>Disk Statistics</FullName>
+    <BaseRule>1</BaseRule>
+    <DefMsgTTL>32</DefMsgTTL>
+    <DefMsgArchiveMode>2</DefMsgArchiveMode>
+    <DefMsgArchiveModeBool>true</DefMsgArchiveModeBool>
+    <DefForwarding>1</DefForwarding>
+    <DefForwardingBool>true</DefForwardingBool>
+    <DefRiskRating>0</DefRiskRating>
+    <DefFalseAlarmRating>0</DefFalseAlarmRating>
+    <InheritTech>1</InheritTech>
+    <RecordStatus>1</RecordStatus>
+    <DateUpdated>2023-01-04T03:19:12.61+00:00</DateUpdated>
+    <SortOrder>1</SortOrder>
+    <VersionMajor>4</VersionMajor>
+    <VersionMinor>1</VersionMinor>
+    <SHostIs>0</SHostIs>
+    <DHostIs>0</DHostIs>
+    <ServiceIs>0</ServiceIs>
+    <HostContext>0</HostContext>
+    <PrefixBaseRuleName>0</PrefixBaseRuleName>
+    <IsSystemRule>No</IsSystemRule>
+    <NewRuleRecordType>0</NewRuleRecordType>
+    <DefLogMartMode>13627389</DefLogMartMode>
+  </MPERule>
+  <MPERuleRegex>
+    <MPERuleRegexID>1000000158</MPERuleRegexID>
+    <RegexTagged>Disk statistics \- Host:\s+(?&lt;dname&gt;.*?)\s+Drive:\s+(?&lt;object&gt;.*?)\s+Total Space:\s+(?&lt;size&gt;\d+)(\s)?GB\s+Free Space:\s+(?&lt;quantity&gt;\d+)(\s)?(GB)?\s+Percentage Free: (&lt;amount&gt;|\w+)</RegexTagged>
+    <IgnoreCase>1</IgnoreCase>
+    <Multiline>0</Multiline>
+    <RecordStatus>1</RecordStatus>
+    <DateUpdated>2023-01-04T03:19:12.603+00:00</DateUpdated>
+    <PerfMonMode>1</PerfMonMode>
+    <VersionMajor>4</VersionMajor>
+    <VersionMinor>1</VersionMinor>
+  </MPERuleRegex>
+  <MPERuleToMST>
+    <MsgSourceTypeID>1000000034</MsgSourceTypeID>
+    <MPERuleRegexID>1000000158</MPERuleRegexID>
+    <SortOrder>1</SortOrder>
+    <AutoSort>0</AutoSort>
+  </MPERuleToMST>
+  <CommonEvent>
+    <CommonEventID>1026822</CommonEventID>
+    <MsgClassID>3400</MsgClassID>
+    <Name>System Statistics</Name>
+    <ShortDesc />
+    <DefRiskRating>0</DefRiskRating>
+    <DateUpdated>2019-03-04T15:07:05.923+00:00</DateUpdated>
+    <RecordStatus>1</RecordStatus>
+  </CommonEvent>
+  <MsgSourceType>
+    <MsgSourceTypeID>1000000034</MsgSourceTypeID>
+    <Name>Flat File - LR-HealthMonitor</Name>
+    <FullName>Flat File - LR-HealthMonitor</FullName>
+    <Abbreviation>LR-HealthMonitor</Abbreviation>
+    <ShortDesc>Log source type for custom LR-HealthMonitor script log output</ShortDesc>
+    <LongDesc />
+    <ParentMsgSourceTypeID>1000000000</ParentMsgSourceTypeID>
+    <IsMst>1</IsMst>
+    <DateUpdated>2021-05-26T02:06:23.383+00:00</DateUpdated>
+    <MsgSourceFormat>3</MsgSourceFormat>
+    <RecordStatus>1</RecordStatus>
+  </MsgSourceType>
+</RuleDataset>
