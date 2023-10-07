@@ -1,8 +1,9 @@
 ﻿<#
 .SYNOPSIS
-    LR-HealthMonitor_v2.ps1 is a robust health monitoring script for LogRhythm deployments
+    LR-HealthMonitor.ps1 is a robust health monitoring script for LogRhythm deployments
+    ***NOTE*** You MUST run LR-HealthMonitor-EncryptPassword.ps1 to securely store the SQL Server 'sa' account password in the hosts.json file.  
 .DESCRIPTION
-    LR-HealthMonitor_v2.ps1 is a robust health monitoring script for LogRhythm deployments which check various health indicators related to a 
+    LR-HealthMonitor.ps1 is a robust health monitoring script for LogRhythm deployments which check various health indicators related to a LogRhythm deployment
     The script currently checks the following:
         -Service status (for Windows servers)
         -Server disc space (for Windows servers)
@@ -11,7 +12,8 @@
         -Database maintenance job status and last runtime
         -LogRhythm_Events partition size
     The script can either output/email a report of the status of all these metrics, or output/email warnings based on configurable threshold
-    Configuration is stored in the hosts_v2.json file
+    Configuration is stored in the hosts.json file
+    ***NOTE*** You MUST run LR-HealthMonitor-EncryptPassword.ps1 to securely store the SQL Server 'sa' account password in the hosts.json file.  
 .NOTES
     This version created by Mike Contasti-Isaac, September 2020
 .PARAMETER OutputReport
@@ -34,6 +36,7 @@
         2021/06/07 - Added Spooled Events folder file count check
         2021/06/21 - Fixed bug in log rotation, added date/time header for report and warnings
         2022/03/16 - Added Unidentified Log Count metrics and warnings
+        2023/10/07 - Implemented encryption for SQL password. 
  #>
 
 [CmdletBinding()]
@@ -52,11 +55,13 @@ $reportsubject = $hosts.config.reportsubject
 $warningsubject = $hosts.config.warningsubject
 $sqlserver = $hosts.database.server
 $sqluser = $hosts.database.user
-$sqlpassword = $hosts.database.password
+$secure_sqlpassword = $hosts.database.password
 $globalloglevel = $hosts.config.loglevel
 $logfile = $hosts.config.logfile
 $Unidentifiedthreshold = $hosts.config.UnidentifiedWarning
-#$sqlcredential = New-Object System.Management.Automation.PsCredential($sqluser, $sqlpassword)
+$a = ConvertTo-SecureString $secure_sqlpassword
+$b =  [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($a)
+$sqlpassword = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($b)
 
 Function Write-Log {  
 
